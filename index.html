@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>FABA 2026 Masters Summer League — Season Standings</title>
+  <style>
+    :root{
+      --navy:#001f3f;  --sky:#87CEEB;  --white:#ffffff;  --black:#000000;
+      --muted:#4a5568; --accent:#2f81f7; --bg:#f2f4f8; --card:#ffffff; --border:#e5e7eb;
+
+      --w-seed: 6ch;      /* fallback SEED width for CSS */
+      --team-col-width: 22ch;
+
+      --seed-top:#d1fadf;
+      --seed-bottom:#fee2e2;
+    }
+    *{ box-sizing:border-box }
+    body{ margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--black); }
+
+    header{
+      padding:14px 16px 20px;
+      text-align:center;
+      background: var(--navy);
+      color: var(--white);
+      position: relative;
+    }
+    header h1{ margin:0 0 4px; font-size: clamp(24px,4vw,34px); color: var(--white); }
+    header p{ margin:0; color: var(--white); opacity:.9; }
+    .banner-note{
+      position:absolute; right:12px; bottom:8px;
+      font-size:12px; color:#e6eefc; opacity:0.9;
+      white-space:nowrap;
+    }
+
+    .card{ max-width:1100px; margin:16px auto 40px; background:var(--card); border-radius:18px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); border:1px solid var(--border); }
+
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    table { table-layout: fixed; width: 100%; border-collapse: collapse; }
+    th, td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    thead th{
+      position:sticky; top:0; z-index:3;
+      background: navy !important; color: white !important;
+      font-weight:700; text-transform:uppercase; border-bottom:2px solid var(--white); padding:10px 8px;
+      text-align:center;
+    }
+
+    td{ background:var(--white); color:var(--black); text-align:center; padding:10px 8px; border-bottom:1px solid var(--border); }
+    th{ text-align:center; }
+
+    td.team, th.team{ width: var(--team-col-width); min-width: var(--team-col-width); }
+    td.win, th.win, td.loss, th.loss{ width: 6ch; min-width: 6ch; }
+    td.team{
+      text-align:left; background: var(--sky) !important; color: var(--black) !important;
+      text-overflow: clip;
+    }
+    th.team{ background: navy !important; color: white !important; text-align:center; }
+
+    .seed{ font-weight:600; } .total{ font-weight:700; color:var(--black) !important; }
+
+    tbody tr:hover td:not(.freeze-seed):not(.freeze-team):not(.freeze-win):not(.freeze-loss){ background:#f8fafc; }
+
+    .actions-row{
+      margin-top:12px; display:flex; align-items:center; gap:12px;
+      justify-content:flex-start; flex-wrap:wrap;
+    }
+
+    .btn{ background:var(--accent); color:#fff; border:none; padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer; }
+    .btn:disabled{ opacity:.6; cursor:progress; }
+
+    .meta-wrap{ margin-top:6px; }
+    .note{ color:var(--muted); font-size:12px; margin-top:8px; text-align:center; }
+    #footerNote{ text-align:left; padding-left:12px; }
+
+    .signature{ margin-top:4px; font-size:12px; color:#6b7280; text-align:center; white-space:nowrap; }
+
+    /* Sticky columns: independent */
+    .freeze-seed {
+      position: sticky;
+      left: 0;
+      z-index: 14;
+      background: var(--white);
+      top: 0;
+    }
+    .freeze-team {
+      position: sticky;
+      left: 0; /* will be updated dynamically via JS */
+      z-index: 13;
+      background: var(--sky);
+      top: 0;
+    }
+    .freeze-win {
+      position: sticky;
+      left: 0; /* will be updated dynamically via JS */
+      z-index: 12;
+      background: var(--white);
+      top: 0;
+    }
+    .freeze-loss {
+      position: sticky;
+      left: 0; /* will be updated dynamically via JS */
+      z-index: 11;
+      background: var(--white);
+      top: 0;
+    }
+    th.freeze-seed { background: navy !important; color: white !important; z-index: 15; }
+    th.freeze-team { background: navy !important; color: white !important; z-index: 14; }
+    th.freeze-win { background: navy !important; color: white !important; z-index: 13; }
+    th.freeze-loss { background: navy !important; color: white !important; z-index: 12; }
+
+    td.seed.seed-top    { background: var(--seed-top) !important; }
+    td.seed.seed-bottom { background: var(--seed-bottom) !important; }
+
+    @media (max-width:760px){
+      table{ width:auto; min-width: 1200px; }
+      th, td{ overflow: visible; text-overflow: clip; white-space: nowrap; }
+      .banner-note{ font-size:11px; right:8px; bottom:6px; }
+    }
+/* CSS Snippet Start =====================================================================================================
+
+	/* =================== MOBILE BASE ADJUSTMENTS (portrait + landscape) =================== */
+	@media (max-width: 760px) {
+
+	  /* Force small fonts everywhere */
+	  body, table, th, td, header h1, header p, .banner-note, .note, .signature, .btn {
+		font-size: 10px !important;
+		line-height: 1.2 !important;
+	  }
+
+	  header h1 {
+		font-size: 12px !important; /* override clamp() */
+	  }
+
+	  th, td {
+		padding: 3px 2px !important;
+	  }
+
+	  .btn {
+		padding: 3px 5px !important;
+	  }
+
+	  /* Table sizing */
+	  table {
+		width: auto !important;
+		min-width: 300px !important; /* scrollable if needed */
+	  }
+
+	  /* Default column widths */
+	  td.team, th.team {
+		width: 10ch !important;
+		min-width: 10ch !important;
+	  }
+
+	  td.seed, th.seed {
+		width: 3ch !important;
+		min-width: 3ch !important;
+	  }
+
+	  td.win, th.win, td.loss, th.loss {
+		width: 4ch !important;
+		min-width: 4ch !important;
+	  }
+	}
+
+	/* =================== PORTRAIT MODE =================== */
+	@media (max-width: 760px) and (orientation: portrait) {
+	  td.team {
+		width: 14ch !important;
+		min-width: 14ch !important;
+	  }
+	  td.seed {
+		width: 4ch !important;
+		min-width: 4ch !important;
+	  }
+	}
+
+	/* =================== LANDSCAPE MODE =================== */
+	@media (max-width: 1024px) and (orientation: landscape) {
+
+	  /* Table fills screen */
+	  table {
+		width: 100% !important;
+		min-width: 100% !important;
+	  }
+
+	  /* TEAMS column slightly wider to fit names */
+	  td.team, th.team {
+		width: 17ch !important;
+		min-width: 16ch !important;
+	  }
+
+	  td.seed, th.seed {
+		width: 4ch !important;
+		min-width: 4ch !important;
+	  }
+
+	  td.win, th.win, td.loss, th.loss {
+		width: 4ch !important;
+		min-width: 4ch !important;
+	  }
+
+	  /* Table font size */
+	  table, th, td {
+		font-size: 10px !important;
+	  }
+
+	  /* Footer note and signature same size as table */
+	  #footerNote,
+	  .signature {
+		font-size: 6px !important;
+		line-height: 1.2 !important;
+	  }
+
+	  /* Slightly smaller header */
+	  header h1 {
+		font-size: 11px !important;
+	  }
+	}
+
+/* =================== STICKY SEED COLUMN (horizontal + vertical) =================== */
+	td.freeze-seed,
+	th.freeze-seed {
+	  position: sticky;
+	  left: 0;       /* keeps it fixed horizontally */
+	  top: 0;        /* keeps it fixed vertically */
+	  z-index: 15;   /* higher than other cells so it stays on top */
+	  background: var(--white); /* opaque background to cover cells behind */
+	}
+
+	th.freeze-seed {
+	  background: navy !important;
+	  color: white !important;
+	}
+
+/* =================== STICKY BANNER (vertical) =================== */
+/*	header {
+/*	  position: sticky;
+/*	  top: 0;           /* sticks to top of viewport */
+/*	  z-index: 20;      /* above table */
+/*	  background: var(--navy);
+/*	}
+
+/* =================== REDUCE SPACE BETWEEN TOP BANNER AND TABLE =================== */
+	.card {
+	margin-top: 4px !important; /* reduce space from header */
+	}
+
+/* =================== MAKE TABLE CARD SQUARE =================== */
+	.card {
+    border-radius: 0 !important;
+	}
+
+/* CSS Snippet End =======================================================================================================	
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FABA 2026 Masters Summer League</h1>
+    <p>Season Standings</p>
+    <div class="banner-note">Best viewed sideways on mobile devices.</div>
+  </header>
+
+  <main class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr id="thead-row"></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="actions-row">
+      <button id="refreshBtn" class="btn">Refresh Standings</button>
+    </div>
+
+    <div class="meta-wrap">
+      <div class="note" id="footerNote">Waiting to load…</div>
+      <div class="signature">Powered by Novite Development</div>
+    </div>
+  </main>
+
+  <script>
+    const CSV_URL = "https://mastersbasketball.blob.core.windows.net/data/standings.csv";
+
+    const $btn = document.getElementById('refreshBtn');
+    const $tbody = document.getElementById('tbody');
+    const $theadRow = document.getElementById('thead-row');
+    const $footer = document.getElementById('footerNote');
+    const $tableWrap = document.querySelector('.table-wrap');
+
+    function num(x){ const v = Number(x); return isNaN(v) ? 0 : v; }
+    function pct(win, loss){ const den = Number(win)+Number(loss); return den ? (Number(win)/den).toFixed(3) : "0.000"; }
+
+    function parseCsv(text){
+      const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").trim().split("\n");
+      const headers = (lines.shift() || "").split(",").map(h => h.trim());
+      const rows = lines.map(line => {
+        const parts = line.split(",").map(x => x.trim());
+        const row = {};
+        headers.forEach((h,i) => { row[h] = parts[i] ?? ""; });
+        return row;
+      });
+      return { headers, rows };
+    }
+
+    function deriveWeekHeaders(headers){
+      return headers.filter(h => /^WK\d+$/i.test(h))
+                    .sort((a,b)=> Number(a.slice(2)) - Number(b.slice(2)));
+    }
+
+    function buildHeadersRow(weekHeaders){
+      const fixed = [
+        '<th class="seed freeze-seed">SEED</th>',
+        '<th class="team freeze-team">TEAMS</th>',
+        '<th class="win freeze-win">WIN</th>',
+        '<th class="loss freeze-loss">LOSS</th>',
+        '<th>PCT</th>'
+      ];
+      const weeks = weekHeaders.map(w => `<th>${w}</th>`).join("");
+      const tail = '<th>TOTAL</th>';
+      $theadRow.innerHTML = fixed.join("") + weeks + tail;
+    }
+
+    function computeRows(rawRows, weekHeaders){
+      return rawRows.map(r => {
+        const W = num(r.WIN), L = num(r.LOSS);
+        const weeks = weekHeaders.map(k => {
+          const v = r[k];
+          return (v === "" || v == null) ? "" : num(v);
+        });
+        const total = weeks.reduce((a,b)=> a + (Number(b) || 0), 0);
+        return {
+          SEED: r.SEED ?? "",
+          TEAMS: r.TEAMS ?? "",
+          WIN: W,
+          LOSS: L,
+          PCT: pct(W,L),
+          weeks,
+          TOTAL: total
+        };
+      });
+    }
+
+    function sortRows(rows){
+      return rows.sort((a,b) => {
+        const pctDiff = Number(b.PCT) - Number(a.PCT);
+        if (pctDiff !== 0) return pctDiff;
+        const totalDiff = Number(b.TOTAL) - Number(a.TOTAL);
+        if (totalDiff !== 0) return totalDiff;
+        return (a.TEAMS || "").localeCompare(b.TEAMS || "");
+      });
+    }
+
+	function setTeamsColWidth(rows) {
+	  // Find the longest team name length
+	  const maxLen = rows.reduce((m, r) => Math.max(m, (r.TEAMS || "").length), 0);
+
+	  let ch;
+
+	  if (window.innerWidth <= 760) {
+		// Mobile
+		if (window.innerHeight < window.innerWidth) {
+		  // Landscape: slightly wider
+		  ch = Math.min(maxLen + 2, 17); // max 17ch
+		} else {
+		  // Portrait: slightly wider for readability
+		  ch = Math.min(maxLen + 2, 14); // max 14ch
+		}
+	  } else {
+		// Desktop
+		ch = maxLen + 2;
+	  }
+
+	  // Set CSS variable for team column width
+	  document.documentElement.style.setProperty('--team-col-width', ch + 'ch');
+
+	  // Update sticky column offset
+	  updateStickyColumns();
+	}
+
+
+    function render(rows, weekHeaders){
+      $tbody.innerHTML = rows.map(r => {
+        const seedNum = Number(r.SEED || 0);
+        const seedClass = seedNum >= 1 && seedNum <= 10 ? 'seed-top' : 'seed-bottom';
+        const weekTds = r.weeks.map(v => `<td>${(v === "" ? "" : v)}</td>`).join("");
+        return `
+          <tr>
+            <td class="seed freeze-seed ${seedClass}">${r.SEED ?? ""}</td>
+            <td class="team freeze-team">${r.TEAMS}</td>
+            <td class="win freeze-win">${r.WIN}</td>
+            <td class="loss freeze-loss">${r.LOSS}</td>
+            <td>${r.PCT}</td>
+            ${weekTds}
+            <td class="total">${r.TOTAL}</td>
+          </tr>
+        `;
+      }).join("");
+      setTeamsColWidth(rows);
+      updateStickyColumns(); // <-- ensure TEAMS left offset matches SEED width
+      scrollMobilePortraitToSummary();
+    }
+
+    function updateStickyColumns() {
+      const seedCell = document.querySelector('td.freeze-seed') || document.querySelector('th.freeze-seed');
+      const teamCell = document.querySelector('td.freeze-team') || document.querySelector('th.freeze-team');
+      const winCell  = document.querySelector('td.freeze-win')  || document.querySelector('th.freeze-win');
+
+      const seedWidth = seedCell ? seedCell.offsetWidth : 0;
+      const teamWidth = teamCell ? teamCell.offsetWidth : 0;
+      const winWidth  = winCell  ? winCell.offsetWidth  : 0;
+
+      document.querySelectorAll('.freeze-team').forEach(el => {
+        el.style.left = seedWidth + 'px';
+      });
+      document.querySelectorAll('.freeze-win').forEach(el => {
+        el.style.left = (seedWidth + teamWidth) + 'px';
+      });
+      document.querySelectorAll('.freeze-loss').forEach(el => {
+        el.style.left = (seedWidth + teamWidth + winWidth) + 'px';
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      updateStickyColumns();
+      scrollMobilePortraitToSummary();
+    });
+    window.addEventListener('orientationchange', () => {
+      updateStickyColumns();
+      scrollMobilePortraitToSummary();
+    });
+
+
+    function isMobilePortrait() {
+      return window.innerWidth <= 760 && window.innerHeight >= window.innerWidth;
+    }
+
+    function scrollMobilePortraitToSummary() {
+      if (!$tableWrap || !isMobilePortrait()) return;
+
+      // Let the browser finish calculating sticky widths first, then show the
+      // right side of the table by default. Sticky SEED/TEAMS/WIN/LOSS remain
+      // visible on the left, while TOTAL and the latest WK# columns fit on screen.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          $tableWrap.scrollLeft = $tableWrap.scrollWidth - $tableWrap.clientWidth;
+        });
+      });
+    }
+
+    async function refresh(){
+      try{
+        $btn.disabled = true;
+        const url = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
+        const res = await fetch(url, { mode:"cors" });
+        if(!res.ok) throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
+        const text = await res.text();
+        const { headers, rows } = parseCsv(text);
+        const weekHeaders = deriveWeekHeaders(headers);
+        buildHeadersRow(weekHeaders);
+        const computed = computeRows(rows, weekHeaders);
+        const sorted = sortRows(computed);
+        render(sorted, weekHeaders);
+        const lm = res.headers.get('Last-Modified');
+        let when = new Date();
+        if (lm) {
+          const parsed = new Date(lm);
+          if (!isNaN(parsed)) when = parsed;
+        }
+        const mstDate = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Phoenix',
+          year: 'numeric', month: '2-digit', day: '2-digit'
+        }).format(when);
+        const mstTime12 = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/Phoenix',
+          hour: '2-digit', minute: '2-digit', hour12: true
+        }).format(when);
+        $footer.textContent = `Scores refreshed on ${mstTime12} MST, ${mstDate}`;
+      }catch(e){
+        console.error(e);
+        $footer.textContent = "Failed to load standings.csv.";
+      }finally{
+        $btn.disabled = false;
+      }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', refresh);
+    refresh();
+  </script>
+</body>
+</html>

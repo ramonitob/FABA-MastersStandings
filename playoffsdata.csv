@@ -1,0 +1,90 @@
+kind,id,field,value
+meta,0,version,1
+meta,0,savedAt,2026-02-24T18:12:26.028Z
+row,1,R1S,
+row,1,R2S,
+row,1,SFS,
+row,1,FS,
+row,2,R1S,33
+row,2,R2S,43
+row,2,SFS,44
+row,2,FS,64
+row,3,R1S,34
+row,3,R2S,55
+row,3,SFS,55
+row,3,FS,34
+row,4,R1S,
+row,4,R2S,
+row,4,SFS,
+row,4,FS,
+row,5,R1S,
+row,5,R2S,
+row,5,SFS,
+row,5,FS,
+row,6,R1S,33
+row,6,R2S,34
+row,6,SFS,55
+row,6,FS,
+row,7,R1S,34
+row,7,R2S,55
+row,7,SFS,54
+row,7,FS,
+row,8,R1S,
+row,8,R2S,
+row,8,SFS,
+row,8,FS,
+row,9,R1S,
+row,9,R2S,
+row,9,SFS,
+row,9,FS,
+row,10,R1S,
+row,10,R2S,65
+row,10,SFS,
+row,10,FS,
+row,11,R1S,
+row,11,R2S,34
+row,11,SFS,
+row,11,FS,
+row,12,R1S,
+row,12,R2S,
+row,12,SFS,
+row,12,FS,
+row,13,R1S,
+row,13,R2S,
+row,13,SFS,
+row,13,FS,
+row,14,R1S,
+row,14,R2S,34
+row,14,SFS,
+row,14,FS,
+row,15,R1S,
+row,15,R2S,55
+row,15,SFS,
+row,15,FS,
+sched,1,date,"Mar. 8, 2026"
+sched,1,time,12:00 PM
+sched,1,court,Court 1
+sched,2,date,"Mar. 8, 2026"
+sched,2,time,12:00 PM
+sched,2,court,Court 2
+sched,3,date,"Mar. 8, 2026"
+sched,3,time,12:00 PM
+sched,3,court,Court 1
+sched,4,date,"Mar. 8, 2026"
+sched,4,time,12:00 PM
+sched,4,court,Court 2
+sched,5,date,"Mar. 8, 2026"
+sched,5,time,12:00 PM
+sched,5,court,Court 1
+sched,6,date,"Mar. 8, 2026"
+sched,6,time,12:00 PM
+sched,6,court,Court 2
+sched,7,date,"Mar. 15, 2026"
+sched,7,time,12:00 PM
+sched,7,court,Court 1
+sched,8,date,"Mar. 15, 2026"
+sched,8,time,12:00 PM
+sched,8,court,Court 2
+sched,9,date,"Mar. 15, 2026"
+sched,9,time,12:00 PM
+sched,9,court,Court 1

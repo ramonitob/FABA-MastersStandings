@@ -1,0 +1,653 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin — FABA Standings Editor</title>
+
+<style>
+    :root{
+      --bg:#ffffff; --text:#000000; --border:#d1d5db; --muted:#4b5563; --accent:#2563eb;
+      --card:#ffffff; --shadow:0 6px 18px rgba(0,0,0,.08);
+      --header:#0b1f3a;
+      --teams-cell:#f2f2f2;
+
+      /* Default desktop widths */
+      --w-seed: 6ch;
+      --team-col-width: 22ch;
+    }
+
+    *{ box-sizing:border-box }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    header{
+      background:var(--header);
+      color:#fff;
+      padding:16px;
+    }
+    header h1{
+      margin:0 0 6px;
+      font-size:clamp(20px,4vw,28px);
+    }
+    header p{
+      margin:0;
+      opacity:.9;
+    }
+
+    main{
+      max-width:1200px;
+      margin:16px auto;
+      padding:0 12px 40px;
+    }
+
+    .panel{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+      box-shadow:var(--shadow);
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .row + .row{ margin-top:10px; }
+
+    label{ font-weight:600; }
+
+    input[type="password"], input[type="text"], input[type="number"]{
+      flex:1 1 420px;
+      min-width:260px;
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#fff;
+      color:var(--text);
+    }
+    input[type="number"]{ max-width:120px; }
+
+    .btn{
+      background:var(--accent);
+      color:#fff;
+      border:none;
+      padding:10px 14px;
+      border-radius:10px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn.secondary{ background:#111827; }
+
+    .btn:disabled{
+      opacity:.5;
+      cursor:not-allowed;
+      background-color:#6b7280;
+      color:#f3f4f6;
+    }
+
+    .btn:not(:disabled){
+      transition:background .2s, opacity .2s;
+    }
+
+    .status{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .status.error{ color:#b91c1c; }
+    .status.ok{ color:#065f46; }
+
+    .table-wrap{
+      margin-top:14px;
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius:12px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+      color:#000;
+      min-width:1000px;
+      table-layout:fixed;
+    }
+
+    thead th{
+      position:sticky;
+      top:0;
+      z-index:3;
+      background:var(--header);
+      color:#fff;
+      text-transform:uppercase;
+      border-bottom:2px solid #e5e7eb;
+      padding:10px 8px;
+      text-align:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    th, td{
+      border:1px solid var(--border);
+      padding:8px 8px;
+      text-align:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      background:#fff;
+    }
+
+    /* Sticky columns */
+    .freeze{ position:sticky; z-index:2; }
+    .freeze-seed{
+      left:0;
+      width:var(--w-seed);
+      min-width:var(--w-seed);
+    }
+    .freeze-team{
+      left:calc(var(--w-seed));
+      width:var(--team-col-width);
+      min-width:var(--team-col-width);
+    }
+    thead th.freeze{ z-index:4; }
+
+    /* TEAM cell - desktop bold */
+    td.teams{
+      background:var(--teams-cell);
+      font-weight:700; /* bold on desktop */
+      text-align:left;
+      white-space:nowrap;
+      overflow:visible;
+      text-overflow:clip;
+    }
+
+    /* TOTAL is bold */
+    td.total-cell{ font-weight:700; }
+
+    /* PCT normal weight */
+    td.pct-cell{ font-weight:400 !important; }
+
+    td[contenteditable="true"]{ outline:none; }
+    td[contenteditable="true"]:focus{
+      box-shadow:inset 0 0 0 2px #bfdbfe;
+      background:#eff6ff;
+    }
+
+    .sas-bar{
+      margin-top:14px;
+      display:flex;
+      gap:16px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+      border-top:1px solid var(--border);
+      padding-top:12px;
+      justify-content:flex-start;
+    }
+
+    .left-stack{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width:220px;
+    }
+
+    .del-row, .del-col{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+
+    .sas-fields{
+      display:none;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .sas-fields input{ min-width:360px; }
+    .sas-hint{
+      color:var(--muted);
+      font-size:12px;
+      display:none;
+    }
+
+    /* ------------------------ MOBILE FIXES ------------------------ */
+
+    @media (max-width:760px){
+
+      body{ font-size:14px; }
+
+      header h1{ font-size:20px; }
+
+      .btn{
+        padding:8px 11px;
+        font-size:13px;
+      }
+
+      th, td{
+        padding:5px 4px;
+        font-size:12px;
+      }
+
+      /* Adjust SEED & TEAM widths via variables */
+      :root{
+        --w-seed: 6ch;
+        --team-col-width: 18ch; /* mobile width */
+      }
+
+      .freeze-seed{
+        width:var(--w-seed) !important;
+        min-width:var(--w-seed) !important;
+      }
+
+      .freeze-team{
+        width:var(--team-col-width) !important;
+        min-width:var(--team-col-width) !important;
+      }
+
+      /* TEAMS normal weight and allow wrapping */
+      td.teams{
+        font-weight:400 !important; /* normal on mobile */
+        white-space:normal !important;
+        word-wrap:break-word;
+        overflow:visible;
+      }
+
+      table{ min-width:800px; }
+
+      input[type="text"], input[type="number"], input[type="password"]{
+        min-width:180px;
+        padding:8px 10px;
+        font-size:14px;
+      }
+
+      .row{ gap:6px; }
+    }
+
+</style>
+
+
+
+  
+</head>
+<body>
+  <header>
+    <h1>Admin: Standings Editor</h1>
+    <p>Load data anytime; enter password to unlock editing and saving</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="row">
+        <label for="pw">Password</label>
+        <input id="pw" type="password" placeholder="Enter admin password"/>
+        <button id="unlockBtn" class="btn">Unlock</button>
+      </div>
+
+      <div class="row">
+		<button id="refreshBtn" class="btn secondary" disabled>Reload Standings</button>
+        <button id="saveBtn" class="btn" disabled>Save CSV</button>
+      </div>
+
+      <div id="status" class="status">Viewing only. Enter password to enable editing.</div>
+
+      <div class="table-wrap">
+        <table id="grid">
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="sas-bar">
+        <div class="left-stack">
+          <button id="addRowBtn" class="btn secondary" disabled>Add Team</button>
+          <div class="del-row">
+            <button id="delRowBtn" class="btn secondary" disabled>Delete Row</button>
+            <input id="delRowInput" type="number" min="1" placeholder="Row # (SEED)" disabled/>
+          </div>
+          <button id="addColBtn" class="btn secondary" disabled>Add Week Column</button>
+          <div class="del-col">
+            <button id="delColBtn" class="btn secondary" disabled>Delete Column</button>
+            <input id="delColInput" type="text" placeholder="Header (e.g., WK3)" disabled/>
+          </div>
+        </div>
+      </div>
+
+      <div class="sas-fields" id="sasFields">
+        <input id="sasPw" type="password" placeholder="Password to change SAS"/>
+        <input id="sasUrl" type="text"/>
+        <button id="saveSasBtn" class="btn">Save SAS</button>
+      </div>
+
+      <div class="row" style="margin-top:20px;">
+        <button id="updateSasBtn" class="btn secondary">Update SAS URL</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const READ_URL = "https://mastersbasketball.blob.core.windows.net/data/standings.csv?sp=rwd&st=2026-07-09T19:19:38Z&se=2027-01-01T03:34:38Z&spr=https&sv=2026-02-06&sr=b&sig=BufcCHLFP5BPSHX8jXfD51IJ8UUM%2Ft9KE14FLZADOEY%3D";
+    const ADMIN_PASSWORD = "Ramonito";
+    const SAS_CHANGE_PASSWORD = "68otinomar";
+
+    const $pw = document.getElementById('pw');
+    const $refresh = document.getElementById('refreshBtn');
+    const $save = document.getElementById('saveBtn');
+    const $status = document.getElementById('status');
+    const $thead = document.getElementById('thead');
+    const $tbody = document.getElementById('tbody');
+
+	// --- Helper to move cursor to the end of a contenteditable element ---
+	function moveCursorToEnd(el){
+		if (!el) return;
+		const range = document.createRange();
+		const sel = window.getSelection();
+		range.selectNodeContents(el);
+		range.collapse(false); // collapse to the end
+		sel.removeAllRanges();
+		sel.addRange(range);
+	}
+
+	// --- Force TEAMS column to uppercase ---
+	$tbody.addEventListener("input", e => {
+	  const td = e.target;
+	  if (!td.dataset.col) return;
+
+	  if (td.dataset.col === "TEAMS") {
+		td.textContent = td.textContent.toUpperCase();
+	  }
+	});
+
+    const $addRow = document.getElementById('addRowBtn');
+    const $delRowBtn = document.getElementById('delRowBtn');
+    const $delRowInput = document.getElementById('delRowInput');
+    const $addColBtn = document.getElementById('addColBtn');
+    const $delColBtn = document.getElementById('delColBtn');
+    const $delColInput2 = document.getElementById('delColInput');
+
+    const $updateSasBtn = document.getElementById('updateSasBtn');
+    const $sasFields = document.getElementById('sasFields');
+    const $sas = document.getElementById('sasUrl');
+    const $sasPw = document.getElementById('sasPw');
+    const $saveSas = document.getElementById('saveSasBtn');
+    const LS_SAS = "faba_admin_sas_url";
+
+    let CSV_HEADERS = ["SEED","TEAMS","WIN","LOSS","PCT","WK1","WK2","WK3","TOTAL"];
+    let WEEK_KEYS = ["WK1","WK2","WK3"];
+    let rowSeq = 1;
+    let unlocked=false;
+
+    function setStatus(msg,cls=""){ $status.className="status"+(cls?" "+cls:""); $status.textContent=msg; }
+    function refreshWeekKeysFromHeaders(){ WEEK_KEYS = CSV_HEADERS.filter(h=>/^WK\d+$/i.test(h)).sort((a,b)=> Number(a.slice(2))-Number(b.slice(2))); }
+    function num(x){ const v=Number(x); return isNaN(v)?0:v; }
+    function pct(w,l){ const W=num(w), L=num(l); return (W+L)?(W/(W+L)).toFixed(3):"0.000"; }
+    function computeTotalFromRow(tr){ return WEEK_KEYS.reduce((sum,k)=>sum+num(tr.querySelector(`td[data-col="${k}"]`)?.textContent||0),0); }
+
+    function parseCsv(text){
+      const lines=text.split("\n").filter(l=>l.trim());
+      const headers=lines[0].split(",").map(s=>s.trim());
+      const rows=lines.slice(1).map(line=>{ const parts=line.split(","); const r={}; headers.forEach((h,i)=>r[h]=parts[i]??""); return r; });
+      return {headers,rows};
+    }
+    function toCsv(headers,rows){ return headers.join(",")+"\n"+rows.map(r=>headers.map(h=>r[h]??"").join(",")).join("\n")+"\n"; }
+
+    function getRowsFromDom(){ return Array.from($tbody.querySelectorAll("tr")).map(tr=>{ const obj={__id:tr.dataset.id}; CSV_HEADERS.forEach(h=>{ const td=tr.querySelector(`td[data-col="${h}"]`); obj[h]=td?td.textContent:""; }); return obj; }); }
+
+    function enrichRows(rows){
+      return rows.map(r=>{
+        const R={...r};
+        if(!R.__id) R.__id=`row_${rowSeq++}`;
+        ["WIN","LOSS",...WEEK_KEYS].forEach(k=>{ R[k]=R[k]===""?"":String(num(R[k])); });
+        R.TOTAL=String(WEEK_KEYS.reduce((s,k)=>s+num(R[k]),0));
+        R.PCT=pct(R.WIN,R.LOSS);
+        return R;
+      });
+    }
+
+    function sortRows(rows){ return rows.sort((a,b)=>Number(b.PCT)-Number(a.PCT)||Number(b.TOTAL)-Number(a.TOTAL)||String(a.TEAMS).localeCompare(String(b.TEAMS))); }
+    function assignSeeds(rows){ rows.forEach((r,i)=>r.SEED=String(i+1)); return rows; }
+    function pipelineRank(rows){ return assignSeeds(sortRows(enrichRows(rows))); }
+
+    function renderTable(headers,rows){
+      CSV_HEADERS=[...headers];
+      refreshWeekKeysFromHeaders();
+      if(CSV_HEADERS.includes("TOTAL")){
+        CSV_HEADERS=CSV_HEADERS.filter(h=>h!=="TOTAL");
+        CSV_HEADERS.push("TOTAL");
+      }
+      const headCells=CSV_HEADERS.map(h=>`<th class="${h==='SEED'?'freeze freeze-seed':h==='TEAMS'?'freeze freeze-team teams':h==='TOTAL'?'total-head':''}" data-col="${h}">${h}</th>`);
+      $thead.innerHTML=`<tr>${headCells.join("")}</tr>`;
+      $tbody.innerHTML=rows.map(r=>{
+        const tds=CSV_HEADERS.map(h=>{
+          const isTeams=h==="TEAMS",isSeed=h==="SEED",isTotal=h==="TOTAL",isPCT=h==="PCT";
+          const numericCols=new Set([...WEEK_KEYS,"WIN","LOSS"]);
+          const cls=[];
+          if(isTeams) cls.push("teams","freeze","freeze-team");
+          if(isSeed) cls.push("freeze","freeze-seed");
+          if(isTotal) cls.push("total-cell");
+          if(isPCT) cls.push("pct-cell");
+          const editable=unlocked && !isSeed && !isTotal && !isPCT;
+          return `<td class="${cls.join(" ")}" data-col="${h}" data-numeric="${numericCols.has(h)?1:0}" contenteditable="${editable}" style="text-align:${isTeams?'left':'center'}">${r[h]??""}</td>`;
+        });
+        return `<tr data-id="${r.__id}">${tds.join("")}</tr>`;
+      }).join("");
+    }
+
+    async function refresh(){
+      try{
+        setStatus("Loading CSV…");
+        const url = READ_URL+(READ_URL.includes("?")?"&":"?")+"t="+Date.now();
+        const res=await fetch(url);
+        if(!res.ok) throw new Error(res.statusText);
+        const text=await res.text();
+        const {headers,rows}=parseCsv(text);
+        renderTable(headers,pipelineRank(rows.map(r=>({...r,__id:`row_${rowSeq++}`}))));
+        setStatus(`Loaded ${rows.length} rows. ${unlocked?"Editing enabled":"Viewing only"}`, unlocked?"ok":"");
+      } catch(e){ console.error(e); setStatus(`Failed to load CSV: ${e.message}`, "error"); }
+    }
+
+    async function save(){
+      if(!unlocked) return setStatus("Locked","error");
+      const rows=getRowsFromDom();
+      const csv=toCsv(CSV_HEADERS,rows.map(r=>{ const r2={...r}; delete r2.__id; return r2; }));
+      try{
+        setStatus("Uploading CSV…");
+        const sasUrl=localStorage.getItem(LS_SAS)||READ_URL;
+        const res=await fetch(sasUrl,{method:"PUT",headers:{"x-ms-blob-type":"BlockBlob","Content-Type":"text/csv"},body:csv});
+        if(!res.ok) throw new Error(res.statusText);
+        setStatus("Saved successfully","ok");
+      } catch(e){ setStatus(`Save failed: ${e.message}`,"error"); }
+    }
+
+    // --- Unlock ---
+	document.getElementById('unlockBtn').onclick = () => {
+	  if (!unlocked) {
+		// Unlock
+		if ($pw.value !== ADMIN_PASSWORD) return setStatus("Incorrect password", "error");
+		unlocked = true;
+
+		// Enable editing buttons including Reload
+		[$save, $addRow, $delRowBtn, $delRowInput, $addColBtn, $delColBtn, $delColInput2, $refresh].forEach(e => e.disabled = false);
+
+		setStatus("Editing enabled", "ok");
+		$pw.value = "";         // Clear password input
+		$pw.disabled = true;    // Prevent typing while unlocked
+		document.getElementById('unlockBtn').textContent = "Lock";
+
+		const rows = getRowsFromDom();
+		renderTable(CSV_HEADERS, rows);
+	  } else {
+		// Lock
+		unlocked = false;
+
+		// Disable editing buttons including Reload
+		[$save, $addRow, $delRowBtn, $delRowInput, $addColBtn, $delColBtn, $delColInput2, $refresh].forEach(e => e.disabled = true);
+
+		setStatus("Locked", "");
+		$pw.disabled = false;   // Allow typing password again
+		document.getElementById('unlockBtn').textContent = "Unlock";
+
+		const rows = getRowsFromDom();
+		renderTable(CSV_HEADERS, rows); // Re-render to disable editing
+	  }
+	};
+
+    $refresh.onclick=refresh;
+    $save.onclick=save;
+
+	$addRow.onclick = () => {
+	  const rows = getRowsFromDom();
+
+	  // Create a new blank row
+	  const newRow = { __id: `row_${rowSeq++}` };
+	  CSV_HEADERS.forEach(h => newRow[h] = "");
+	  newRow.TEAMS = "";    // start blank
+	  newRow.TOTAL = "0";
+	  newRow.PCT = "0.000";
+	  newRow.WIN = "";
+	  newRow.LOSS = "";
+
+	  // Add the new row at the end without sorting
+	  rows.push(newRow);
+
+	  // Render table with the new row at the bottom
+	  renderTable(CSV_HEADERS, rows);
+
+	  // Auto-focus TEAMS cell of the new row
+	  const td = $tbody.querySelector(`tr[data-id="${newRow.__id}"] td[data-col="TEAMS"]`);
+	  if (td) td.focus();
+	};
+
+    $delRowBtn.onclick=()=>{
+      const idx=parseInt($delRowInput.value,10)-1;
+      const rows=getRowsFromDom();
+      if(isNaN(idx)||idx<0||idx>=rows.length) return setStatus("Invalid SEED","error");
+      rows.splice(idx,1);
+      renderTable(CSV_HEADERS,pipelineRank(rows));
+      $delRowInput.value="";
+    };
+
+	$addColBtn.onclick = () => {
+	  let max = 0;
+	  CSV_HEADERS.forEach(h => {
+		const m = h.match(/^WK(\d+)$/i);
+		if (m) max = Math.max(max, parseInt(m[1], 10));
+	  });
+	  const name = "WK" + (max + 1);
+	  CSV_HEADERS.splice(CSV_HEADERS.length - 1, 0, name);
+
+	  const rows = getRowsFromDom();
+	  rows.forEach(r => r[name] = ""); // blank cells
+
+	  refreshWeekKeysFromHeaders();
+	  renderTable(CSV_HEADERS, pipelineRank(rows));
+
+	  // Auto-focus first row in new column
+	  const firstRowTd = $tbody.querySelector(`tr:first-child td[data-col="${name}"]`);
+	  if (firstRowTd) firstRowTd.focus();
+	};
+
+    $delColBtn.onclick = () => {
+      const name=$delColInput2.value.trim();
+      if(!CSV_HEADERS.includes(name)) return setStatus("Column not found","error");
+      if(["TOTAL","SEED","TEAMS"].includes(name)) return setStatus("Cannot delete fixed column","error");
+
+      const rows=getRowsFromDom(); 
+      rows.forEach(r=>delete r[name]);
+      CSV_HEADERS=CSV_HEADERS.filter(h=>h!==name);
+
+      // Renumber WK columns sequentially
+      let wkIndex = 1;
+      CSV_HEADERS.forEach((h,i) => {
+        if (/^WK\d+$/i.test(h)) {
+          const oldKey = CSV_HEADERS[i];
+          const newKey = "WK" + wkIndex++;
+          if (newKey !== oldKey) {
+            CSV_HEADERS[i] = newKey;
+            rows.forEach(r => { r[newKey] = r[oldKey] ?? "0"; delete r[oldKey]; });
+          }
+        }
+      });
+
+      refreshWeekKeysFromHeaders();
+      renderTable(CSV_HEADERS, pipelineRank(rows));
+      $delColInput2.value="";
+    };
+
+    // --- Update SAS ---
+    $updateSasBtn.onclick=()=>{ $sasFields.style.display="flex"; };
+    $saveSas.onclick=()=>{
+      if($sasPw.value!==SAS_CHANGE_PASSWORD) return setStatus("Incorrect SAS password","error");
+      if(!$sas.value) return setStatus("Enter SAS URL","error");
+      localStorage.setItem(LS_SAS,$sas.value);
+      setStatus("SAS URL updated","ok");
+      $sasFields.style.display="none"; $sas.value=""; $sasPw.value="";
+    };
+
+    // --- Update dependent cells on blur (cursor stays during typing) ---
+    $tbody.addEventListener("blur", e => {
+      const td = e.target;
+      if (!td.dataset.col) return;
+      const tr = td.closest("tr");
+      const col = td.dataset.col;
+
+      if (WEEK_KEYS.includes(col)) {
+        tr.querySelector('td[data-col="TOTAL"]').textContent = computeTotalFromRow(tr);
+      }
+      if (col === "WIN" || col === "LOSS") {
+        const win = tr.querySelector('td[data-col="WIN"]')?.textContent || "0";
+        const loss = tr.querySelector('td[data-col="LOSS"]')?.textContent || "0";
+        const pctCell = tr.querySelector('td[data-col="PCT"]');
+        if (pctCell) pctCell.textContent = pct(win, loss);
+      }
+
+      // Re-sort rows
+      const rowsArray = Array.from($tbody.querySelectorAll("tr"));
+      rowsArray.sort((a,b)=>{
+        const val = (tr,key)=>{
+          if(key==="PCT") return parseFloat(tr.querySelector(`td[data-col="PCT"]`).textContent)||0;
+          if(key==="TOTAL") return parseInt(tr.querySelector(`td[data-col="TOTAL"]`).textContent)||0;
+          if(key==="TEAMS") return tr.querySelector(`td[data-col="TEAMS"]`).textContent||"";
+        };
+        return val(b,"PCT")-val(a,"PCT")||val(b,"TOTAL")-val(a,"TOTAL")||val(a,"TEAMS").localeCompare(val(b,"TEAMS"));
+      });
+      rowsArray.forEach((row, idx)=>{
+        row.querySelector('td[data-col="SEED"]').textContent = idx+1;
+        $tbody.appendChild(row);
+      });
+    }, true);
+
+    refresh();
+	
+	// Restrict numeric columns to numbers only and keep cursor at end
+	$tbody.addEventListener("input", e => {
+	  const td = e.target;
+	  if (!td.dataset.col) return;
+
+	  const numericCols = new Set([...WEEK_KEYS, "WIN", "LOSS", "TOTAL", "PCT"]);
+	  const editableCols = new Set([...WEEK_KEYS, "WIN", "LOSS", "TEAMS"]); // all editable columns
+
+	  // Clean numeric input
+	  if (numericCols.has(td.dataset.col)) {
+		td.textContent = td.textContent.replace(/[^0-9.]/g, '');
+		const parts = td.textContent.split(".");
+		if (parts.length > 2) td.textContent = parts[0] + "." + parts[1];
+	  }
+
+	  // Move cursor to end for all editable columns (TEAMS, WK#, WIN, LOSS)
+	  if (editableCols.has(td.dataset.col)) {
+		moveCursorToEnd(td);
+	  }
+	});
+
+	
+  </script>
+</body>
+</html>

@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>FABA 2026 Masters Summer League — Playoffs Schedules</title>
+  <style>
+    :root{
+      --navy:#0b1f3a; --bg:#f2f4f8; --border:#e5e7eb; --accent:#2f81f7;
+
+      /* Dynamic widths (JS sets --round-col-width = longest team + 5ch) */
+      --round-col-width: 28ch;
+      --score-col-width: 16ch;
+      --score-width-ch: 5.5ch;
+
+      /* Row tints */
+      --team-fore: #DCEEFF;
+      --row-sched: #F5F6F7;
+      --row-group: #FFF4E5;
+
+      /* Tournament-board clean typography/padding */
+      --th-pad-y: 8px;
+      --td-pad-y: 8px;
+      --font-body: 13px;
+      --font-small: 10px;
+
+      /* Court select width */
+      --court-min: 13ch;
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html,body{ height:100%; }
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:var(--bg); color:#111827; font-size:var(--font-body); line-height:1.25;
+    }
+
+    header{
+      position:relative;
+      padding:16px 12px 26px; background:var(--navy); color:#fff; text-align:center;
+    }
+    header h1{ margin:0 0 4px; font-size:clamp(18px,3.8vw,30px); font-weight:800; letter-spacing:.2px; }
+    header p{ margin:0; opacity:.9; font-size:clamp(11px,2.2vw,13px); }
+    .banner-note{
+      position:absolute; left:10px; bottom:8px;
+      font-size:10px; opacity:.85; color:#e9f2ff; pointer-events:none; white-space:nowrap;
+    }
+
+    .card{
+      max-width:1400px; margin:12px auto 24px; background:#fff; border:1px solid var(--border);
+      border-radius:16px; padding:12px; box-shadow:0 8px 24px rgba(0,0,0,.08);
+    }
+    .table-wrap{ overflow:auto; -webkit-overflow-scrolling:touch; }
+    table{ table-layout:fixed; width:100%; border-collapse:collapse; min-width: 960px; }
+    thead th{
+      position:sticky; top:0; z-index:3; background:var(--navy); color:#fff; border-bottom:2px solid #fff;
+      text-transform:uppercase; padding:var(--th-pad-y) 8px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      letter-spacing:.35px; font-weight:800;
+      font-size: calc(var(--font-body) - 1px); /* slightly smaller than body */
+    }
+    td,th{ border-bottom:1px solid var(--border); padding:var(--td-pad-y) 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    th.col-round, td.col-round{ width: var(--round-col-width); min-width: var(--round-col-width); }
+    th.col-score, td.col-score{ width: var(--score-col-width); min-width: var(--score-col-width); }
+
+    th.col-round:not(:first-child), td.col-round:not(:first-child),
+    th.col-score:not(:first-child), td.col-score:not(:first-child){
+      border-left: 2px solid #f0f3f7;
+    }
+
+    .group-label{ font-weight:800; }
+    .seed-num{ font-weight:700; opacity:.7; margin-right:.25rem; }
+    .champ{ font-weight:900; }
+
+    td.team-fore{ background: var(--team-fore); color:#111; }
+    tr.sched-row td{ background: var(--row-sched); }
+    tr.group-row td{ background: var(--row-group); }
+    tr.compact td{ padding-top:4px; padding-bottom:4px; font-size:var(--font-small); }
+
+    .actions{ margin:10px 0 0; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .btn{ background:var(--accent); color:#fff; border:none; padding:9px 12px; border-radius:10px; font-weight:700; cursor:pointer; font-size:13px; }
+    .btn.secondary{ background:#6b7280; }
+    .btn.tiny{ padding:6px 10px; font-size:11px; border-radius:8px; }
+    .btn:disabled{ opacity:.6; cursor:progress; }
+    .note{ color:#6b7280; font-size:12px; text-align:left; padding-left:6px; margin-top:6px; }
+    .signature{ margin-top:6px; font-size:11px; color:#6b7280; text-align:center; }
+
+    .score{
+      width: var(--score-width-ch); padding: 5px 7px; border:1px solid var(--border);
+      border-radius:8px; text-align:center; font-weight:700; font-size:13px; background:#fff;
+    }
+    .score:focus{ outline:none; box-shadow:0 0 0 2px rgba(37,99,235,.25); }
+    input[type=number]{ -moz-appearance: textfield; }
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
+
+    .sched-wrap{
+      display:grid; grid-template-columns: auto 1fr; column-gap:8px; row-gap:8px; align-items:center;
+    }
+    .sched-wrap label{ font-weight:700; font-size:11px; color:#374151; }
+    .sched-input, .sched-court{
+      padding:7px 9px; border:1px solid var(--border); border-radius:8px; min-width:16ch; font-size:13px; background:#fff;
+    }
+    .sched-court{ min-width: var(--court-min); width: var(--court-min); }
+
+    .winner{ background:#e6ffed; }
+    .loser{ opacity:.7; }
+
+    /* Locked styles */
+    body.locked .btn:not(#unlockBtn):not(#exportBtn){
+      opacity:.55;
+      cursor:not-allowed;
+    }
+    body.locked input,
+    body.locked select{
+      background:#fff !important;
+      color:#111827;
+      opacity:1;
+    }
+
+    /* Phones landscape (tournament-board clean) */
+    @media (max-height: 480px) and (orientation: landscape){
+      :root{ --font-body: 13px; --font-small: 10px; --th-pad-y: 5px; --td-pad-y: 5px; --score-width-ch: 4.2ch; }
+      .score{ font-size:13px; padding:5px 7px; }
+      .sched-input, .sched-court{ font-size:13px; padding:6px 8px; min-width:12ch; }
+      header{ padding:10px 8px 20px; }
+      .signature{ font-size:11px; }
+      table{ min-width: 780px; }
+    }
+    @media (max-height: 380px) and (orientation: landscape){
+      :root{ --font-body: 13px; --font-small: 10px; --th-pad-y: 4px; --td-pad-y: 4px; --score-width-ch: 4.0ch; }
+      .score{ font-size:13px; padding:5px 6px; }
+      .sched-input, .sched-court{ font-size:13px; padding:5px 7px; min-width:11ch; }
+      table{ min-width: 740px; }
+    }
+
+    /* Exporting: remove clipping */
+    body.exporting .table-wrap{ overflow:visible !important; }
+    body.exporting .card{ transform:none !important; width:auto !important; }
+
+    #exportScratch{
+      position:fixed; left:0; top:-99999px; width:auto; max-width:none; pointer-events:none; opacity:0.001;
+      z-index:-1;
+    }
+    #exportScratch header, #exportScratch .card, #exportScratch .table-wrap, #exportScratch table{
+      max-width:none !important; width:auto !important;
+    }
+    #exportScratch thead th{ position:static !important; }
+
+    .print-input, .print-score{
+      display:inline-flex; align-items:center; background:#fff; border:1px solid var(--border);
+      border-radius:8px; font-size:13px; height:26px; line-height:1; box-sizing:border-box;
+    }
+    .print-input{ padding:6px 10px; justify-content:flex-start; }
+    .print-score{ padding:0 8px; font-weight:700; justify-content:center; }
+  </style>
+</head>
+<body>
+  <div id="exportScope">
+    <header>
+      <h1>FABA 2026 Masters Summer League</h1>
+      <p>Playoffs Bracket and Schedules</p>
+      <div class="banner-note">Best viewed sideways on mobile devices.</div>
+    </header>
+
+    <main class="card">
+      <div class="table-wrap" id="tableOnly">
+        <table id="bracketTable">
+          <thead>
+            <tr>
+              <th class="col-round">ROUND 1</th>
+              <th class="col-score">SCORES</th>
+              <th class="col-round">ROUND 2</th>
+              <th class="col-score">SCORES</th>
+              <th class="col-round">SEMIFINALS</th>
+              <th class="col-score">SCORES</th>
+              <th class="col-round">FINALS</th>
+              <th class="col-score">SCORES</th>
+              <th class="col-round">CHAMPIONS</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div class="card">
+    <div class="actions">
+      <button id="rebuildBtn" class="btn">Rebuild Pairings</button>
+      <button id="saveBtn" class="btn">Save Data</button>
+      <button id="loadBtn" class="btn">Retrieve Data</button>
+      <button id="clearBtn" class="btn secondary">Clear All</button>
+      <button id="changeSasBtn" class="btn secondary">Set Data File SAS/URL</button>
+      <button id="exportBtn" class="btn tiny" title="Export banner + bracket">🖼️ Export to PNG</button>
+      <button id="unlockBtn" class="btn secondary">🔒 Unlock</button>
+    </div>
+    <div id="footer" class="note">Loading standings.csv… (Save/Retrieve uses $web/playoffsdata.csv)</div>
+    <div class="signature">Powered by Novite Development</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <div id="exportScratch" aria-hidden="true"></div>
+
+  <script>
+    /* =========================================================
+       Saving to $web/playoffsdata.csv requires:
+       1) PLAYOFFS_DATA_CSV to be the BLOB endpoint URL to $web/playoffsdata.csv
+       2) A SAS token with WRITE/CREATE permissions (or an authenticated environment)
+       3) Storage account CORS configured to allow:
+          - PUT, GET
+          - Allowed Headers including x-ms-blob-type, x-ms-version, content-type
+       ========================================================= */
+
+    const STANDINGS_CSV = "https://mastersbasketball.blob.core.windows.net/data/standings.csv";
+    const DEFAULT_PLAYOFFS_DATA_CSV = "https://mastersbasketball.blob.core.windows.net/$web/playoffsdata.csv";
+    const LS_DATA_URL_KEY = "faba_playoffsdata_url_v1";
+
+    let PLAYOFFS_DATA_CSV = localStorage.getItem(LS_DATA_URL_KEY) || DEFAULT_PLAYOFFS_DATA_CSV;
+
+    const $tbody = document.getElementById('tbody');
+    const $footer = document.getElementById('footer');
+
+    let rowsState = [];
+    let scheduleState = {};
+
+    /* ===== Small helpers ===== */
+    const num = x => { const v = Number(x); return isNaN(v) ? 0 : v; };
+    const pct = (w,l)=>{ const d=num(w)+num(l); return d? (num(w)/d).toFixed(3) : "0.000"; };
+
+    function parseCsv(text){
+      const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").trim().split("\n");
+      if (!lines.length) return { headers:[], rows:[] };
+      const headers = (lines.shift() || "").split(",").map(h => h.trim());
+      const rows = lines.map(line => {
+        const parts = line.split(",").map(x => x.trim());
+        const row = {}; headers.forEach((h,i) => row[h] = (parts[i] ?? ""));
+        return row;
+      });
+      return { headers, rows };
+    }
+    function deriveWeekHeaders(headers){ return headers.filter(h=>/^WK\d+$/i.test(h)).sort((a,b)=>Number(a.slice(2))-Number(b.slice(2))); }
+    function computeStandingsRows(rawRows, headers){
+      const weekHeaders = deriveWeekHeaders(headers);
+      return rawRows.map(r=>{
+        const W=num(r.WIN), L=num(r.LOSS);
+        const total = weekHeaders.reduce((s,k)=> s + (r[k]===""?0:num(r[k])), 0);
+        return { TEAMS:r.TEAMS??"", WIN:W, LOSS:L, PCT:r.PCT?Number(r.PCT):Number(pct(W,L)), TOTAL:r.TOTAL?Number(r.TOTAL):total };
+      });
+    }
+    function sortForSeeding(rows){
+      return rows.sort((a,b)=> (Number(b.PCT)-Number(a.PCT)) || (Number(b.TOTAL)-Number(a.TOTAL)) || (a.TEAMS||"").localeCompare(b.TEAMS||""));
+    }
+    function buildSeedTeamMap(sortedRows){
+      const seeds = sortedRows.map((r,i)=>({seed:i+1, team:r.TEAMS||""}));
+      return new Map(seeds.map(x=>[x.seed,x.team]));
+    }
+
+    /* ===== Bracket layout ===== */
+    function makeLayoutRows(seedToTeam){
+      const rows = Array.from({length:15},(_,i)=>({
+        id:i+1,type:"team",
+        R1:"",R2:"",SF:"",F:"",CH:"", R1S:"",R2S:"",SFS:"",FS:""
+      }));
+      const put=(col,r1,text)=>{ const idx=r1-1; if(idx>=0&&idx<rows.length) rows[idx][col]=text; };
+
+      put("R1",1,"Group 1"); put("R1",2,`8 ${seedToTeam.get(8)||""}`);  put("R1",3,`9 ${seedToTeam.get(9)||""}`);
+      put("R1",5,"Group 2"); put("R1",6,`7 ${seedToTeam.get(7)||""}`);  put("R1",7,`10 ${seedToTeam.get(10)||""}`);
+
+      put("R2",1,"Group 3"); put("R2",2,`1 ${seedToTeam.get(1)||""}`);  put("R2",3,"Grp 1 Winner");
+      put("R2",5,"Group 4"); put("R2",6,`2 ${seedToTeam.get(2)||""}`);  put("R2",7,"Grp 2 Winner");
+      put("R2",9,"Group 5"); put("R2",10,`3 ${seedToTeam.get(3)||""}`); put("R2",11,`6 ${seedToTeam.get(6)||""}`);
+      put("R2",13,"Group 6"); put("R2",14,`4 ${seedToTeam.get(4)||""}`); put("R2",15,`5 ${seedToTeam.get(5)||""}`);
+
+      put("SF",1,"Group 7"); rows[1].SF="Grp 6 Winner"; rows[2].SF="Grp 3 Winner";
+      put("SF",5,"Group 8"); rows[5].SF="Grp 4 Winner"; rows[6].SF="Grp 5 Winner";
+      put("F",1,"Group 9");  rows[1].F="Grp 7 Winner"; rows[2].F="Grp 8 Winner";
+      return rows;
+    }
+
+    /* ===== Clear All target: keep seed numbers + Group labels, but remove team names ===== */
+    function makeNumbersOnlyLayoutRows(){
+      const rows = Array.from({length:15},(_,i)=>({
+        id:i+1,type:"team",
+        R1:"",R2:"",SF:"",F:"",CH:"",
+        R1S:"",R2S:"",SFS:"",FS:""
+      }));
+      const put=(col,r1,text)=>{ const idx=r1-1; if(idx>=0&&idx<rows.length) rows[idx][col]=text; };
+
+      // Round 1
+      put("R1",1,"Group 1"); put("R1",2,"8"); put("R1",3,"9");
+      put("R1",5,"Group 2"); put("R1",6,"7"); put("R1",7,"10");
+
+      // Round 2
+      put("R2",1,"Group 3"); put("R2",2,"1");  put("R2",3,"Grp 1 Winner");
+      put("R2",5,"Group 4"); put("R2",6,"2");  put("R2",7,"Grp 2 Winner");
+      put("R2",9,"Group 5"); put("R2",10,"3"); put("R2",11,"6");
+      put("R2",13,"Group 6"); put("R2",14,"4"); put("R2",15,"5");
+
+      // Semis / Finals structure stays
+      put("SF",1,"Group 7"); rows[1].SF="Grp 6 Winner"; rows[2].SF="Grp 3 Winner";
+      put("SF",5,"Group 8"); rows[5].SF="Grp 4 Winner"; rows[6].SF="Grp 5 Winner";
+      put("F",1,"Group 9");  rows[1].F="Grp 7 Winner"; rows[2].F="Grp 8 Winner";
+
+      return rows;
+    }
+
+    const schedulePlacements=[
+      {group:1,underRow:3,col:"R1"},{group:2,underRow:7,col:"R1"},
+      {group:3,underRow:3,col:"R2"},{group:4,underRow:7,col:"R2"},
+      {group:5,underRow:11,col:"R2"},{group:6,underRow:15,col:"R2"},
+      {group:7,underRow:3,col:"SF"},{group:8,underRow:7,col:"SF"},
+      {group:9,underRow:3,col:"F"},
+    ];
+    function buildRenderableRows(coreRows){
+      const out=[], byUnder=new Map();
+      for(const s of schedulePlacements){ if(!byUnder.has(s.underRow)) byUnder.set(s.underRow,[]); byUnder.get(s.underRow).push(s); }
+      for(const r of coreRows){ out.push(r); const specs=byUnder.get(r.id); if(specs) out.push({type:"sched",specs}); }
+      return out;
+    }
+
+    /* ===== Rendering helpers ===== */
+    function escapeHtml(str){ return String(str).replace(/[&<>"]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
+    function renderLabelInfo(val){
+      if(!val) return {html:"",isGroup:false,isTeam:false};
+      const s=String(val);
+
+      if(s.startsWith("Group")) return {html:`<span class="group-label">${s}</span>`,isGroup:true,isTeam:false};
+
+      // "Grp X Winner" is team-like label (keeps team tint)
+      if(/^\s*Grp\s+\d+\s+Winner\s*$/i.test(s)) return {html:escapeHtml(s),isGroup:false,isTeam:true};
+
+      // Seed + team: "8 TeamName"
+      const m=s.match(/^\s*(\d+)\s+(.*)$/);
+      if(m){ const seed=m[1],name=m[2]; return {html:`<span class="seed-num">${seed}</span> ${escapeHtml(name)}`,isGroup:false,isTeam:true}; }
+
+      // Seed-only (e.g., "8") -> render as seed-num for consistent look
+      const seedOnly = s.match(/^\s*(\d+)\s*$/);
+      if(seedOnly){
+        const seed = seedOnly[1];
+        return {html:`<span class="seed-num">${seed}</span>`,isGroup:false,isTeam:true};
+      }
+
+      return {html:escapeHtml(s),isGroup:false,isTeam:true};
+    }
+    function extractTeamOnly(s){ if(!s) return ""; const m=String(s).match(/^\s*\d+\s+(.*)$/); return m?m[1].trim():String(s).trim(); }
+
+    function scoreInput(row,key){
+      const enable=(key==="R1S"&&[2,3,6,7].includes(row.id))||(key==="R2S"&&[2,3,6,7,10,11,14,15].includes(row.id))||(key==="SFS"&&[2,3,6,7].includes(row.id))||(key==="FS"&&[2,3].includes(row.id));
+      if(!enable) return "";
+      const val=row[key]??"";
+      return `<input class="score" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" value="${val}" data-row="${row.id}" data-key="${key}"/>`;
+    }
+
+    function winnerByRoundText(byId,aId,bId,roundKey,scoreKey){
+      const A=byId.get(aId),B=byId.get(bId);
+      const as=Number(String(A?.[scoreKey]||"").replace(/\D/g,"")), bs=Number(String(B?.[scoreKey]||"").replace(/\D/g,""));
+      if(!Number.isFinite(as)||!Number.isFinite(bs)||as===bs) return null;
+      const src=(as>bs)?A:B; return extractTeamOnly(src?.[roundKey]||"");
+    }
+    function clearDerivedColumns(rows){
+      const keep=(v)=>/^\s*Grp\s+\d+\s+Winner\s*$/i.test(v||"");
+      rows.forEach(r=>{
+        if(r.type!=="team") return;
+        if(![2,3,6,7,10,11,14,15].includes(r.id)){ if(!(r.R2&&(r.R2.startsWith('Group')||keep(r.R2)))) r.R2=""; }
+        if(!(r.SF&&(r.SF.startsWith('Group')||keep(r.SF)))) r.SF="";
+        if(!(r.F&&(r.F.startsWith('Group')||keep(r.F))))  r.F="";
+        r.CH="";
+      });
+    }
+    function recomputeAdvancement(rows){
+      const byId=new Map(rows.filter(r=>r.type==="team").map(r=>[r.id,r]));
+      clearDerivedColumns(rows);
+      const r1g1=winnerByRoundText(byId,2,3,"R1","R1S"), r1g2=winnerByRoundText(byId,6,7,"R1","R1S");
+      if(r1g1) byId.get(3).R2=r1g1; if(r1g2) byId.get(7).R2=r1g2;
+      const g3=winnerByRoundText(byId,2,3,"R2","R2S"), g4=winnerByRoundText(byId,6,7,"R2","R2S"), g5=winnerByRoundText(byId,10,11,"R2","R2S"), g6=winnerByRoundText(byId,14,15,"R2","R2S");
+      if(g6) byId.get(2).SF=g6; if(g3) byId.get(3).SF=g3; if(g4) byId.get(6).SF=g4; if(g5) byId.get(7).SF=g5;
+      const g7=winnerByRoundText(byId,2,3,"SF","SFS"), g8=winnerByRoundText(byId,6,7,"SF","SFS");
+      if(g7) byId.get(2).F=g7; if(g8) byId.get(3).F=g8;
+      const g9=winnerByRoundText(byId,2,3,"F","FS");
+      if(g9){ byId.get(2).CH=g9; if(byId.get(3)) byId.get(3).CH=""; }
+    }
+
+    function extractTeamOnly2(s){
+      if(!s) return "";
+      // For "8 Team", take Team; for "8" keep "8" length; for "Group" ignore; for "Grp X Winner" keep as is
+      const m=String(s).match(/^\s*\d+\s+(.*)$/);
+      return m ? m[1].trim() : String(s).trim();
+    }
+    function longestTeamLen(rows){
+      let maxLen=0;
+      const consider=(s)=>{
+        if(!s) return;
+        const raw=String(s);
+        if(/^Group/.test(raw)) return;
+        const t=extractTeamOnly2(raw);
+        if(!t) return;
+        maxLen=Math.max(maxLen,t.trim().length);
+      };
+      rows.filter(r=>r.type==="team").forEach(r=>{ consider(r.R1); consider(r.R2); consider(r.SF); consider(r.F); consider(r.CH); });
+      return Math.max(10,maxLen);
+    }
+    function applyDynamicWidths(rows){
+      const ch=longestTeamLen(rows)+5;
+      document.documentElement.style.setProperty('--round-col-width', ch+'ch');
+    }
+
+    /* ===== Schedule state ===== */
+    function ensureScheduleDefaults(){
+      for(let g=1; g<=9; g++){
+        const cur=scheduleState[g]||{date:"",time:"",court:""};
+        scheduleState[g]={ date:cur.date||"", time:cur.time||"", court:cur.court||"" };
+      }
+    }
+    function scheduleCell(group){
+      const sc=scheduleState[group]||{date:"",time:"",court:""};
+      return `
+        <div class="sched-wrap">
+          <label>Date</label>
+          <input class="sched-input" type="text" placeholder="Date" data-sched="${group}" data-skey="date" value="${sc.date||""}">
+          <label>Time</label>
+          <input class="sched-input" type="text" placeholder="12:00 PM" data-sched="${group}" data-skey="time" value="${sc.time||""}">
+          <label>Court</label>
+          <select class="sched-court" data-sched="${group}" data-skey="court">
+            <option value=""></option>
+            <option value="Court 1" ${sc.court==="Court 1"?"selected":""}>Court 1</option>
+            <option value="Court 2" ${sc.court==="Court 2"?"selected":""}>Court 2</option>
+          </select>
+        </div>
+      `;
+    }
+
+    /* ===== Read-only lock (hashed password) ===== */
+    const LOCK_KEY = "faba_readonly_unlocked_v1";
+    const PASSWORD_HASH = "8c2557c5a71fdadf37511c4ff2c21acd7c414010fdc21aa58cf012a70d3fb587"; // SHA-256("Ramonito")
+    let isUnlocked = (localStorage.getItem(LOCK_KEY) === "1");
+
+    async function sha256Hex(str){
+      const buf = new TextEncoder().encode(str);
+      const digest = await crypto.subtle.digest("SHA-256", buf);
+      return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
+    }
+
+    function setUnlockedState(unlocked){
+      isUnlocked = !!unlocked;
+      localStorage.setItem(LOCK_KEY, isUnlocked ? "1" : "0");
+      document.body.classList.toggle("locked", !isUnlocked);
+
+      const ub = document.getElementById("unlockBtn");
+      if(ub) ub.textContent = isUnlocked ? "🔓 Lock" : "🔒 Unlock";
+
+      const idsToDisableWhenLocked = ["rebuildBtn","saveBtn","loadBtn","clearBtn","changeSasBtn"];
+      idsToDisableWhenLocked.forEach(id=>{
+        const el = document.getElementById(id);
+        if (el) el.disabled = !isUnlocked;
+      });
+
+      document.querySelectorAll('#exportScope input, #exportScope select').forEach(el=>{
+        el.disabled = !isUnlocked;
+      });
+
+      if(!isUnlocked && !($footer.textContent||"").toLowerCase().includes("loading")){
+        $footer.textContent = "Locked (read-only). Tap Unlock to edit.";
+      }
+    }
+
+    async function toggleLock(){
+      if(isUnlocked){ setUnlockedState(false); return; }
+      const pw = prompt("Enter password to unlock editing:");
+      if (pw === null) return;
+      try{
+        const hashed = await sha256Hex(pw);
+        if(hashed === PASSWORD_HASH){
+          setUnlockedState(true);
+          $footer.textContent = "Unlocked: page is editable.";
+        }else{
+          alert("Incorrect password.");
+        }
+      }catch(e){
+        console.error(e);
+        alert("Unable to verify password on this browser.");
+      }
+    }
+
+    /* ===== Render ===== */
+    function render(coreRows){
+      ensureScheduleDefaults();
+      applyDynamicWidths(coreRows);
+
+      const view=buildRenderableRows(coreRows);
+
+      const byId=new Map(coreRows.filter(r=>r.type==="team").map(r=>[r.id,r]));
+      const pairStages=[ ["R1S",[[2,3],[6,7]]], ["R2S",[[2,3],[6,7],[10,11],[14,15]]], ["SFS",[[2,3],[6,7]]], ["FS",[[2,3]]] ];
+      const rowClass={};
+      const wFrom=(a,b,key)=>{ const A=byId.get(a),B=byId.get(b); const as=Number(String(A?.[key]||"").replace(/\D/g,"")), bs=Number(String(B?.[key]||"").replace(/\D/g,"")); if(!Number.isFinite(as)||!Number.isFinite(bs)||as===bs) return null; return (as>bs)?A:B; };
+      pairStages.forEach(([key,pairs])=>{ pairs.forEach(([a,b])=>{ const w=wFrom(a,b,key); rowClass[a] ||= {}; rowClass[b] ||= {}; if(w){ rowClass[w.id][key]='winner'; const l=(w.id===a)?b:a; rowClass[l][key]='loser'; } }); });
+
+      const html = view.map((r,i)=>{
+        if(r.type==="sched"){
+          const colOrder=["R1","R1S","R2","R2S","SF","SFS","F","FS","CH"];
+          const tds=[];
+          for(const key of colOrder){
+            const spec=r.specs.find(s=>s.col===key);
+            const cls=(key.endsWith('S'))?'col-score':'col-round';
+            tds.push(`<td class="${cls}">${spec ? scheduleCell(spec.group) : "&nbsp;"}</td>`);
+          }
+          return `<tr class="sched-row">${tds.join("")}</tr>`;
+        }
+
+        const labelKeys=["R1","R2","SF","F"];
+        const isGroupRow=labelKeys.some(k=>(r[k]||"").toString().startsWith("Group"));
+        const isEmptyRow=!((r.R1&&r.R1.trim())||(r.R2&&r.R2.trim())||(r.SF&&r.SF.trim())||(r.F&&r.F.trim())||(r.CH&&r.CH.trim()));
+        const prev=view[i-1], next=view[i+1];
+        const compact=isEmptyRow && ((prev && prev.type==="sched") || (next && next.type!=="sched" && labelKeys.some(k=>(next[k]||"").toString().startsWith("Group"))));
+        const trClasses=[isGroupRow?'group-row':'', compact?'compact':''].filter(Boolean).join(' ');
+
+        const cellFor=(key)=>{
+          const info=renderLabelInfo(r[key]);
+          const fore=info.isTeam?'team-fore':'';
+          return `<td class="col-round ${fore}">${info.html||"&nbsp;"}</td>`;
+        };
+
+        const cells=[];
+        cells.push(cellFor("R1")); cells.push(`<td class="col-score ${rowClass[r.id]?.R1S||""}">${scoreInput(r,"R1S")}</td>`);
+        cells.push(cellFor("R2")); cells.push(`<td class="col-score ${rowClass[r.id]?.R2S||""}">${scoreInput(r,"R2S")}</td>`);
+        cells.push(cellFor("SF")); cells.push(`<td class="col-score ${rowClass[r.id]?.SFS||""}">${scoreInput(r,"SFS")}</td>`);
+        cells.push(cellFor("F"));  cells.push(`<td class="col-score ${rowClass[r.id]?.FS||""}">${scoreInput(r,"FS")}</td>`);
+        const chInfo=renderLabelInfo(r.CH);
+        cells.push(`<td class="col-round ${r.CH&&r.CH.trim()?"champ":""} ${chInfo.isTeam?"team-fore":""}">${chInfo.html||"&nbsp;"}</td>`);
+        return `<tr class="${trClasses}">${cells.join("")}</tr>`;
+      }).join("");
+
+      $tbody.innerHTML=html;
+
+      // Score listeners
+      $tbody.querySelectorAll('input.score').forEach(inp=>{
+        inp.addEventListener('input',(e)=>{
+          if(!isUnlocked){ e.preventDefault(); return; }
+          const caret=e.target.selectionStart;
+          let val=e.target.value.replace(/\D+/g,"").slice(0,3);
+          e.target.value=val;
+          const rowId=Number(e.target.getAttribute('data-row'));
+          const key=e.target.getAttribute('data-key');
+          const row=rowsState.find(x=>x.type==="team"&&x.id===rowId);
+          if(row){ row[key]=val; }
+          const focus={row:rowId,key,caret:Math.min(caret,val.length)};
+          recomputeAdvancement(rowsState); render(rowsState);
+          const sel=`input.score[data-row="${focus.row}"][data-key="${focus.key}"]`; const el=document.querySelector(sel);
+          if(el){ el.focus(); try{ el.setSelectionRange(focus.caret, focus.caret); }catch(_){ } }
+        });
+        inp.addEventListener('wheel',(e)=> e.preventDefault(), {passive:false});
+      });
+
+      // Schedule listeners
+      $tbody.querySelectorAll('input[data-sched], select[data-sched]').forEach(el=>{
+        const handler=()=>{
+          if(!isUnlocked) return;
+          const g=Number(el.getAttribute('data-sched'));
+          const sk=el.getAttribute('data-skey');
+          scheduleState[g] ||= {date:"",time:"",court:""};
+          scheduleState[g][sk]=el.value;
+        };
+        el.addEventListener('input', handler);
+        el.addEventListener('change', handler);
+      });
+
+      setUnlockedState(isUnlocked);
+    }
+
+    /* ===== Build from standings (reset) ===== */
+    async function rebuildFromStandingsReset(){
+      try{
+        $footer.textContent="Loading standings.csv…";
+        const res=await fetch(STANDINGS_CSV + (STANDINGS_CSV.includes("?")?"&":"?") + "t=" + Date.now(), {mode:"cors", cache:"no-store"});
+        if(!res.ok) throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
+        const text=await res.text();
+        const {headers,rows}=parseCsv(text);
+        const computed=computeStandingsRows(rows,headers);
+        const seeded=sortForSeeding(computed);
+        const seedToTeam=buildSeedTeamMap(seeded);
+
+        scheduleState = {}; // blank by default
+        rowsState = makeLayoutRows(seedToTeam);
+        recomputeAdvancement(rowsState);
+        render(rowsState);
+        $footer.textContent="Rebuilt from standings.csv (all saved data reset).";
+      }catch(e){
+        console.error(e);
+        $footer.textContent="Failed to rebuild: " + e.message;
+      }finally{
+        setUnlockedState(isUnlocked);
+      }
+    }
+
+    /* ===== Clear All: keep seed numbers + group labels, clear team names + scores + schedules (time blank) ===== */
+    function clearAllFields(){
+      if(!isUnlocked){ $footer.textContent="Locked (read-only). Unlock to clear."; return; }
+      try{
+        // Keep structural labels and seed numbers, but remove team names and all scores
+        rowsState = makeNumbersOnlyLayoutRows();
+
+        // Clear all schedule fields (including time) to blank for all groups
+        scheduleState = {};
+        for(let g=1; g<=9; g++){
+          scheduleState[g] = {date:"", time:"", court:""};
+        }
+
+        recomputeAdvancement(rowsState);
+        render(rowsState);
+
+        $footer.textContent="Cleared all fields (team names, scores, date/time/court). Seed numbers and group labels kept.";
+      }catch(e){
+        console.error(e);
+        $footer.textContent="Clear failed: " + e.message;
+      }
+    }
+
+    /* ===== playoffsdata.csv format =====
+       kind,id,field,value
+       row,<rowId>,<field>,<value>
+       sched,<groupId>,date|time|court,<value>
+       meta,0,savedAt,<iso>
+       meta,0,version,1
+       =================================== */
+    function csvEscape(v){
+      const s = (v===null||v===undefined) ? "" : String(v);
+      if(/[",\n\r]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+      return s;
+    }
+    function toPlayoffsDataCsv(){
+      const lines = [];
+      lines.push("kind,id,field,value");
+      lines.push(["meta","0","version","1"].map(csvEscape).join(","));
+      lines.push(["meta","0","savedAt",new Date().toISOString()].map(csvEscape).join(","));
+
+      for(const r of rowsState.filter(x=>x.type==="team")){
+        // store labels too (so "numbers only" can be saved/retrieved if desired)
+        for(const k of ["R1","R2","SF","F","CH","R1S","R2S","SFS","FS"]){
+          lines.push(["row", String(r.id), k, String(r[k]||"")].map(csvEscape).join(","));
+        }
+      }
+      for(const g of Object.keys(scheduleState)){
+        const grp = Number(g);
+        const sc = scheduleState[grp] || {};
+        for(const k of ["date","time","court"]){
+          lines.push(["sched", String(grp), k, String(sc[k]||"")].map(csvEscape).join(","));
+        }
+      }
+      return lines.join("\n") + "\n";
+    }
+
+    function parseSimpleCsvLines(text){
+      const out = [];
+      const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l=>l.trim().length>0);
+      if(!lines.length) return out;
+
+      function splitCsvLine(line){
+        const cells=[];
+        let cur="", inQ=false;
+        for(let i=0;i<line.length;i++){
+          const ch=line[i];
+          if(inQ){
+            if(ch === '"'){
+              if(line[i+1] === '"'){ cur+='"'; i++; }
+              else inQ=false;
+            }else cur+=ch;
+          }else{
+            if(ch === '"') inQ=true;
+            else if(ch === ','){ cells.push(cur); cur=""; }
+            else cur+=ch;
+          }
+        }
+        cells.push(cur);
+        return cells;
+      }
+
+      const header = splitCsvLine(lines[0]).map(s=>s.trim().toLowerCase());
+      const idx = {
+        kind: header.indexOf("kind"),
+        id: header.indexOf("id"),
+        field: header.indexOf("field"),
+        value: header.indexOf("value")
+      };
+      if(idx.kind<0||idx.id<0||idx.field<0||idx.value<0) return out;
+
+      for(let i=1;i<lines.length;i++){
+        const c=splitCsvLine(lines[i]);
+        out.push({
+          kind: (c[idx.kind]||"").trim(),
+          id: (c[idx.id]||"").trim(),
+          field: (c[idx.field]||"").trim(),
+          value: (c[idx.value]||"")
+        });
+      }
+      return out;
+    }
+
+    function applyPlayoffsDataRows(entries){
+      for(const e of entries){
+        if(e.kind === "row"){
+          const rid = Number(e.id);
+          const key = e.field;
+          const row = rowsState.find(x=>x.type==="team" && x.id===rid);
+          if(!row) continue;
+
+          if(["R1S","R2S","SFS","FS"].includes(key)){
+            row[key] = String(e.value||"").replace(/\D+/g,"").slice(0,3);
+          }else if(["R1","R2","SF","F","CH"].includes(key)){
+            row[key] = String(e.value||"");
+          }
+        }else if(e.kind === "sched"){
+          const gid = Number(e.id);
+          scheduleState[gid] ||= {date:"",time:"",court:""};
+          if(["date","time","court"].includes(e.field)){
+            scheduleState[gid][e.field] = e.value || "";
+          }
+        }
+      }
+    }
+
+    /* ===== SAVE/RETRIEVE to Azure Blob ($web/playoffsdata.csv) ===== */
+    async function saveToPlayoffsDataCsv(){
+      if(!isUnlocked){ $footer.textContent="Locked (read-only). Unlock to save."; return; }
+      try{
+        ensureScheduleDefaults();
+        const body = toPlayoffsDataCsv();
+        $footer.textContent = "Saving to playoffsdata.csv…";
+
+        const res = await fetch(PLAYOFFS_DATA_CSV, {
+          method: "PUT",
+          mode: "cors",
+          cache: "no-store",
+          headers: {
+            "x-ms-blob-type": "BlockBlob",
+            "x-ms-version": "2020-10-02",
+            "Content-Type": "text/csv; charset=utf-8",
+            "Cache-Control": "no-cache"
+          },
+          body
+        });
+
+        if(!res.ok){
+          const txt = await res.text().catch(()=> "");
+          const hint = (res.status === 403 || res.status === 401)
+            ? "Check SAS permissions (Write/Create) and Storage CORS (PUT + allowed headers: x-ms-blob-type, x-ms-version, content-type)."
+            : "Verify you are using the blob endpoint URL to the $web container.";
+          throw new Error(`Save failed (${res.status} ${res.statusText}). ${txt ? txt.slice(0,220) : ""} ${hint}`.trim());
+        }
+
+        $footer.textContent = "Saved to $web/playoffsdata.csv successfully.";
+      }catch(e){
+        console.error(e);
+        $footer.textContent = "Save failed: " + e.message;
+      }
+    }
+
+    async function autoLoadPlayoffsDataIfExists(){
+      try{
+        const url = PLAYOFFS_DATA_CSV + (PLAYOFFS_DATA_CSV.includes("?")?"&":"?") + "t=" + Date.now();
+        const res = await fetch(url, {mode:"cors", cache:"no-store"});
+        if(!res.ok) return;
+
+        const text = await res.text();
+
+        // Build bracket fresh from standings, then apply saved data
+        await rebuildFromStandingsReset();
+
+        const entries = parseSimpleCsvLines(text);
+        applyPlayoffsDataRows(entries);
+        recomputeAdvancement(rowsState);
+        render(rowsState);
+
+        $footer.textContent = "Loaded saved data from playoffsdata.csv.";
+      }catch(e){
+        console.warn("Auto-load skipped:", e);
+      }
+    }
+
+    async function loadFromPlayoffsDataCsv(){
+      if(!isUnlocked){ $footer.textContent="Locked (read-only). Unlock to retrieve."; return; }
+      try{
+        $footer.textContent = "Retrieving playoffsdata.csv…";
+        const res = await fetch(PLAYOFFS_DATA_CSV + (PLAYOFFS_DATA_CSV.includes("?")?"&":"?") + "t=" + Date.now(), {mode:"cors", cache:"no-store"});
+        if(!res.ok){
+          throw new Error(`Retrieve failed (${res.status} ${res.statusText}). Ensure the blob is readable (public or SAS Read) and CORS allows GET.`);
+        }
+        const text = await res.text();
+
+        // Always rebuild pairings fresh from standings, then apply saved data
+        await rebuildFromStandingsReset();
+
+        const entries = parseSimpleCsvLines(text);
+        applyPlayoffsDataRows(entries);
+        recomputeAdvancement(rowsState);
+        render(rowsState);
+
+        $footer.textContent = "Retrieved data from playoffsdata.csv.";
+      }catch(e){
+        console.error(e);
+        $footer.textContent = "Retrieve failed: " + e.message;
+      }
+    }
+
+    function setDataFileUrlOrSas(){
+      if(!isUnlocked){ $footer.textContent="Locked (read-only). Unlock to change data file URL."; return; }
+      const current = PLAYOFFS_DATA_CSV || DEFAULT_PLAYOFFS_DATA_CSV;
+
+      const input = prompt(
+        "Set Playoffs Data CSV URL.\n\nOption A: Paste FULL blob URL to $web/playoffsdata.csv (recommended).\nOption B: Paste ONLY a SAS that starts with ?sv=... (it will be applied to the current base URL).\n\nFor saving, the SAS must include Write/Create.\nFor loading, it must include Read (or the blob must be public).",
+        current
+      );
+      if(input === null) return;
+      const trimmed = input.trim();
+      if(!trimmed){ $footer.textContent="No change made."; return; }
+
+      if(trimmed.startsWith("?")){
+        const base = current.split("?")[0];
+        PLAYOFFS_DATA_CSV = base + trimmed;
+      }else{
+        PLAYOFFS_DATA_CSV = trimmed;
+      }
+
+      localStorage.setItem(LS_DATA_URL_KEY, PLAYOFFS_DATA_CSV);
+      $footer.textContent = "Playoffs data file URL updated.";
+    }
+
+    /* ===== Export (unchanged) ===== */
+    function pad2(n){ return n.toString().padStart(2,'0'); }
+    function isIOS(){ const ua=navigator.userAgent||""; const iOS=/iPad|iPhone|iPod/.test(ua); const iPadOS=(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1); return iOS||iPadOS; }
+
+    function measureColumnWidths(table){
+      const widths=[]; table.querySelectorAll('thead tr:first-child th').forEach(th=> widths.push(Math.round(th.getBoundingClientRect().width)));
+      return widths;
+    }
+    function injectColgroup(tbl,widths){
+      const old=tbl.querySelector('colgroup'); if(old) old.remove();
+      const cg=document.createElement('colgroup');
+      widths.forEach(w=>{ const col=document.createElement('col'); col.style.width=w+'px'; col.style.minWidth=w+'px'; col.style.maxWidth=w+'px'; cg.appendChild(col); });
+      tbl.insertBefore(cg, tbl.firstElementChild);
+    }
+    function applyWidthsToCells(tbl,widths){
+      const setRow=row=>{
+        const cells=row.children;
+        for(let i=0;i<Math.min(cells.length,widths.length);i++){
+          const w=widths[i]+'px'; const c=cells[i];
+          c.style.width=w; c.style.minWidth=w; c.style.maxWidth=w; c.style.boxSizing='border-box';
+        }
+      };
+      tbl.querySelectorAll('thead tr').forEach(setRow);
+      tbl.querySelectorAll('tbody tr').forEach(setRow);
+      const sum=widths.reduce((a,b)=>a+b,0);
+      tbl.style.tableLayout='fixed'; tbl.style.borderCollapse='separate'; tbl.style.borderSpacing='0';
+      tbl.style.width=sum+'px'; tbl.style.minWidth=sum+'px'; tbl.style.maxWidth=sum+'px';
+    }
+    function computeOuterCardWidthPxFromWidths(scope,widths){
+      const sum=widths.reduce((a,b)=>a+b,0);
+      const card=scope.querySelector('.card'); const cs=getComputedStyle(card);
+      const pad=parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight);
+      const bord=parseFloat(cs.borderLeftWidth)+parseFloat(cs.borderRightWidth);
+      return Math.round(sum+pad+bord);
+    }
+    function copyLiveValues(src,clone){
+      const map=new Map();
+      src.querySelectorAll('input').forEach(inp=>{
+        const sig= inp.getAttribute('data-row') ? `score:${inp.getAttribute('data-row')}:${inp.getAttribute('data-key')}`
+                 : inp.getAttribute('data-sched') ? `sched:${inp.getAttribute('data-sched')}:${inp.getAttribute('data-skey')}` : null;
+        if(sig) map.set(sig, inp.value);
+      });
+      clone.querySelectorAll('input').forEach(inp=>{
+        const sig= inp.getAttribute('data-row') ? `score:${inp.getAttribute('data-row')}:${inp.getAttribute('data-key')}`
+                 : inp.getAttribute('data-sched') ? `sched:${inp.getAttribute('data-sched')}:${inp.getAttribute('data-skey')}` : null;
+        if(sig && map.has(sig)){ const v=map.get(sig); inp.setAttribute('value',v); inp.value=v; }
+      });
+      const sMap=new Map();
+      src.querySelectorAll('select').forEach(sel=> sMap.set(sel.getAttribute('data-sched')+':'+sel.getAttribute('data-skey'), sel.value));
+      clone.querySelectorAll('select').forEach(sel=>{
+        const key=sel.getAttribute('data-sched')+':'+sel.getAttribute('data-skey');
+        if(sMap.has(key)){
+          const v=sMap.get(key);
+          sel.value=v;
+          sel.querySelectorAll('option').forEach(o=>{ o.removeAttribute('selected'); if(o.value===v) o.setAttribute('selected','selected'); });
+        }
+      });
+    }
+    function replaceControls(clone){
+      clone.querySelectorAll('input.score').forEach(inp=>{
+        const span=document.createElement('span'); span.className='print-score'; span.textContent=inp.value||'';
+        const cs=getComputedStyle(inp); span.style.width=inp.offsetWidth+'px'; span.style.height=inp.offsetHeight+'px';
+        span.style.fontSize=cs.fontSize; span.style.borderRadius=cs.borderRadius; span.style.border=cs.borderWidth+' solid '+(cs.borderColor||'#e5e7eb'); span.style.fontWeight='700';
+        inp.replaceWith(span);
+      });
+      clone.querySelectorAll('input.sched-input').forEach(inp=>{
+        const span=document.createElement('span'); span.className='print-input'; span.textContent=inp.value||'';
+        const cs=getComputedStyle(inp); span.style.width=inp.offsetWidth+'px'; span.style.height=inp.offsetHeight+'px';
+        span.style.fontSize=cs.fontSize; span.style.borderRadius=cs.borderRadius; span.style.border=cs.borderWidth+' solid '+(cs.borderColor||'#e5e7eb'); span.style.paddingLeft=cs.paddingLeft; span.style.paddingRight=cs.paddingRight;
+        inp.replaceWith(span);
+      });
+      clone.querySelectorAll('select.sched-court').forEach(sel=>{
+        const span=document.createElement('span'); span.className='print-input'; span.textContent=sel.options[sel.selectedIndex]?.text||'';
+        const cs=getComputedStyle(sel); span.style.width=sel.offsetWidth+'px'; span.style.height=sel.offsetHeight+'px';
+        span.style.fontSize=cs.fontSize; span.style.borderRadius=cs.borderRadius; span.style.border=cs.borderWidth+' solid '+(cs.borderColor||'#e5e7eb'); span.style.paddingLeft='10px'; span.style.paddingRight='10px';
+        sel.replaceWith(span);
+      });
+    }
+    async function renderCanvasTiled(element, w, h){
+      const IOS_MAX=8192-8, GEN_MAX=16384-8;
+      const MAX = (isIOS()? IOS_MAX : GEN_MAX);
+
+      const baseScale = Math.min(2, MAX / Math.max(w,h));
+      const needTile = (h*baseScale > MAX);
+
+      if(!needTile){
+        return await html2canvas(element, {
+          backgroundColor:'#ffffff', scale: baseScale, useCORS:true,
+          scrollX:0, scrollY:0, width:w, height:h, windowWidth:w, windowHeight:h
+        });
+      }
+
+      const out=document.createElement('canvas');
+      out.width=Math.round(w*baseScale);
+      out.height=Math.round(h*baseScale);
+      const ctx=out.getContext('2d');
+      ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,out.width,out.height);
+      ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+
+      const host=document.createElement('div');
+      host.style.position='fixed';
+      host.style.left='0'; host.style.top='0';
+      host.style.width=w+'px';
+      host.style.overflow='hidden';
+      host.style.background='#ffffff';
+      document.getElementById('exportScratch').appendChild(host);
+
+      const tileH = Math.max(512, Math.floor(MAX/baseScale)-16);
+      const tiles = Math.ceil(h / tileH);
+
+      for(let i=0;i<tiles;i++){
+        const y=i*tileH, partH=Math.min(tileH, h-y);
+        host.style.height=partH+'px';
+
+        const prevParent = element.parentNode;
+        const prevTransform = element.style.transform;
+        host.appendChild(element);
+        element.style.transform = `translateY(-${y}px)`;
+
+        const tile = await html2canvas(host, {
+          backgroundColor:'#ffffff', scale: baseScale, useCORS:true,
+          scrollX:0, scrollY:0, width:w, height:partH, windowWidth:w, windowHeight:partH
+        });
+
+        element.style.transform = prevTransform || '';
+        if(prevParent) prevParent.appendChild(element);
+
+        const dy=Math.round(y*baseScale);
+        ctx.drawImage(tile, 0,0,tile.width,tile.height, 0,dy, Math.round(w*baseScale), Math.round(partH*baseScale));
+      }
+
+      host.remove();
+      return out;
+    }
+    async function exportBannerAndBracket(){
+      const scope=document.getElementById('exportScope'); if(!scope) return;
+
+      const liveTable=scope.querySelector('#bracketTable');
+      const colWidths=measureColumnWidths(liveTable);
+      const SCORE_MIN_PX=110, CHAMP_MIN_PX=140;
+      [1,3,5,7].forEach(i=>{ if(colWidths[i]<SCORE_MIN_PX) colWidths[i]=SCORE_MIN_PX; });
+      const last=colWidths.length-1; if(colWidths[last]<CHAMP_MIN_PX) colWidths[last]=CHAMP_MIN_PX; colWidths[last]+=2;
+
+      const scratch=document.getElementById('exportScratch');
+      scratch.innerHTML="";
+      const cloneScope=scope.cloneNode(true);
+      scratch.appendChild(cloneScope);
+
+      const note=cloneScope.querySelector('.banner-note'); if(note) note.remove();
+
+      cloneScope.querySelectorAll('thead th').forEach(th=> th.style.position='static');
+      cloneScope.querySelectorAll('.table-wrap, table').forEach(el=>{ el.style.maxWidth='none'; el.style.width='auto'; el.style.overflow='visible'; });
+      const cloneCard=cloneScope.querySelector('.card'); if(cloneCard) cloneCard.style.transform='none';
+
+      const cloneTable=cloneScope.querySelector('#bracketTable');
+      injectColgroup(cloneTable,colWidths);
+      applyWidthsToCells(cloneTable,colWidths);
+
+      const forceW=computeOuterCardWidthPxFromWidths(cloneScope,colWidths);
+      [cloneScope, cloneScope.querySelector('.card'), cloneScope.querySelector('header')].forEach(el=>{
+        el.style.width=forceW+'px'; el.style.maxWidth='none'; el.style.margin='0'; el.style.display='block';
+      });
+
+      copyLiveValues(scope, cloneScope);
+      replaceControls(cloneScope);
+
+      document.body.classList.add('exporting');
+      const w=Math.ceil(cloneScope.scrollWidth);
+      const h=Math.ceil(cloneScope.scrollHeight);
+      cloneScope.style.width=w+'px'; cloneScope.style.height=h+'px'; cloneScope.style.overflow='visible';
+
+      const canvas = await renderCanvasTiled(cloneScope, w, h);
+      document.body.classList.remove('exporting');
+
+      const now=new Date();
+      const fname=`playoffs-${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}-${pad2(now.getHours())}${pad2(now.getMinutes())}.png`;
+      canvas.toBlob(blob=>{
+        const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname;
+        document.body.appendChild(a); a.click();
+        setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+      }, 'image/png');
+    }
+
+    /* ===== Wire ===== */
+    document.getElementById('rebuildBtn').addEventListener('click', async ()=>{ if(!isUnlocked) return; await rebuildFromStandingsReset(); });
+    document.getElementById('saveBtn').addEventListener('click', saveToPlayoffsDataCsv);
+    document.getElementById('loadBtn').addEventListener('click', loadFromPlayoffsDataCsv);
+    document.getElementById('clearBtn').addEventListener('click', clearAllFields);
+    document.getElementById('changeSasBtn').addEventListener('click', setDataFileUrlOrSas);
+    document.getElementById('exportBtn').addEventListener('click', exportBannerAndBracket);
+    document.getElementById('unlockBtn').addEventListener('click', toggleLock);
+
+    // Init lock + initial build
+    (async ()=>{
+      setUnlockedState(isUnlocked);
+      await rebuildFromStandingsReset();
+      await autoLoadPlayoffsDataIfExists();
+    })();
+  </script>
+</body>
+</html>
